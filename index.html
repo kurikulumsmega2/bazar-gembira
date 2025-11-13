@@ -398,190 +398,319 @@
     </div>
 
     <script>
-        // ==============================
-        // KONFIGURASI GOOGLE SHEETS
-        // ==============================
+// ==============================
+// KONFIGURASI GOOGLE SHEETS - DIPERBAIKI
+// ==============================
+
+// URL Google Apps Script Anda
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw565ZKb5OwrCS9L9qYp79oa6gRlmUMUOHvMAf61f5Sye__ZjNvuKK-T4FTg-TClaY/exec';
+
+// Fungsi utama untuk kirim data ke Google Sheets - DIPERBAIKI
+async function sendToGoogleSheets(data) {
+    // Cek koneksi internet
+    if (!navigator.onLine) {
+        throw new Error('Tidak ada koneksi internet');
+    }
+
+    try {
+        console.log('Mengirim data ke Google Sheets:', data);
         
-        // URL Google Apps Script Anda
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw565ZKb5OwrCS9L9qYp79oa6gRlmUMUOHvMAf61f5Sye__ZjNvuKK-T4FTg-TClaY/exec';
+        // Format data sesuai dengan yang diharapkan Google Apps Script
+        const payload = {
+            action: 'submitRating',
+            email: data.email,
+            standId: data.standId,
+            standName: data.standName,
+            jurusan: data.jurusan,
+            category: data.category,
+            rating_stand: data.ratings.stand,
+            rating_pelayanan: data.ratings.pelayanan,
+            rating_konten: data.ratings.konten,
+            rating_rasa: data.ratings.rasa,
+            average: data.average,
+            timestamp: data.timestamp,
+            sekolah: data.sekolah
+        };
+
+        // Gunakan FormData untuk menghindari CORS issues
+        const formData = new FormData();
+        formData.append('data', JSON.stringify(payload));
+
+        // Coba beberapa metode pengiriman
+        let response;
         
-        // Data stand
-        const stands = [
-            { id: 1, name: "AKL 1", jurusan: "Akutansi dan Keuangan Lembaga", description: "Stand kelas AKL 1", category: "AKL" },
-            { id: 2, name: "AKL 2", jurusan: "Akutansi dan Keuangan Lembaga", description: "Stand kelas AKL 2", category: "AKL" },
-            { id: 3, name: "AKL 3", jurusan: "Akutansi dan Keuangan Lembaga", description: "Stand kelas AKL 3", category: "AKL" },
-            { id: 4, name: "MPLB 1", jurusan: "Manajemen Perkantoran dan Layanan Bisnis", description: "Stand kelas MPLB 1", category: "MPLB" },
-            { id: 5, name: "MPLB 2", jurusan: "Manajemen Perkantoran dan Layanan Bisnis", description: "Stand kelas MPLB 2", category: "MPLB" },
-            { id: 6, name: "MPLB 3", jurusan: "Manajemen Perkantoran dan Layanan Bisnis", description: "Stand kelas MPLB 3", category: "MPLB" },
-            { id: 7, name: "PPLG 1", jurusan: "Pengembangan Perangkat Lunak dan Gim", description: "Stand kelas PPLG 1", category: "PPLG" },
-            { id: 8, name: "PPLG 2", jurusan: "Pengembangan Perangkat Lunak dan Gim", description: "Stand kelas PPLG 2", category: "PPLG" },
-            { id: 9, name: "TJKT 1", jurusan: "Teknik Jaringan Komputer dan Telekomunikasi", description: "Stand kelas TJKT 1", category: "TJKT" },
-            { id: 10, name: "TJKT 2", jurusan: "Teknik Jaringan Komputer dan Telekomunikasi", description: "Stand kelas TJKT 2", category: "TJKT" },
-            { id: 11, name: "KLN 1", jurusan: "Kuliner", description: "Stand kelas Kuliner", category: "KLN" },
-            { id: 12, name: "KDS 1", jurusan: "Kecantikan dan Spa", description: "Stand kelas Kecantikan", category: "KDS" },
-            { id: 13, name: "BD 1", jurusan: "Pemasaran", description: "Stand kelas Pemasaran BD 1", category: "PM" },
-            { id: 14, name: "BR 2", jurusan: "Pemasaran", description: "Stand kelas Pemasaran BR 2", category: "PM" }
-        ];
-
-        // Data management
-        let userData = JSON.parse(localStorage.getItem('bazaarRatings')) || {};
-        let pendingSubmissions = JSON.parse(localStorage.getItem('pendingSubmissions')) || [];
-        let currentUser = '';
-        let currentStand = null;
-        let charts = {};
-
-        // Elemen DOM
-        const emailEntryPage = document.getElementById('email-entry-page');
-        const mainContent = document.getElementById('main-content');
-        const standList = document.getElementById('stand-list');
-        const ratingPage = document.getElementById('rating-page');
-        const standsSection = document.getElementById('stands-section');
-        const chartsSection = document.getElementById('charts-section');
-        const currentUserEmail = document.getElementById('current-user-email');
-        const ratingStandName = document.getElementById('rating-stand-name');
-        const ratingStandJurusan = document.getElementById('rating-stand-jurusan');
-        const emailForm = document.getElementById('email-form');
-        const ratingForm = document.getElementById('rating-form');
-        const backButton = document.getElementById('back-button');
-        const logoutButton = document.getElementById('logout-button');
-        const viewChartsButton = document.getElementById('view-charts-button');
-        const backToStandsButton = document.getElementById('back-to-stands');
-        const syncButton = document.getElementById('sync-button');
-        const totalStands = document.getElementById('total-stands');
-        const ratedStands = document.getElementById('rated-stands');
-        const unratedStands = document.getElementById('unrated-stands');
-        const averageRating = document.getElementById('average-rating');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const loadingText = document.getElementById('loading-text');
-        const syncStatus = document.getElementById('sync-status');
-        const syncText = document.getElementById('sync-text');
-
-        // ==============================
-        // FUNGSI INTEGRASI GOOGLE SHEETS
-        // ==============================
-
-        // Fungsi utama untuk kirim data ke Google Sheets
-        async function sendToGoogleSheets(data) {
-            // Cek koneksi internet
-            if (!navigator.onLine) {
-                throw new Error('Tidak ada koneksi internet');
-            }
-
+        // Metode 1: Menggunakan fetch dengan FormData
+        try {
+            response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: formData,
+                mode: 'no-cors' // Mode no-cors untuk menghindari CORS issues
+            });
+            
+            // Dengan no-cors, kita tidak bisa membaca response, tapi request tetap terkirim
+            console.log('Request terkirim dengan mode no-cors');
+            return 'success';
+            
+        } catch (error) {
+            console.log('Metode 1 gagal, mencoba metode 2...', error);
+            
+            // Metode 2: Menggunakan fetch dengan JSON dan header sederhana
             try {
-                loadingText.textContent = 'Mengirim data ke Google Sheets...';
-                
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: JSON.stringify(data)
+                    body: `data=${encodeURIComponent(JSON.stringify(payload))}`
                 });
-
-                if (!response.ok) {
+                
+                if (response.ok) {
+                    const result = await response.text();
+                    console.log('Response dari Google Sheets:', result);
+                    return result;
+                } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
-                const result = await response.text();
-                console.log('Response dari Google Sheets:', result);
                 
-                return result;
+            } catch (error2) {
+                console.log('Metode 2 gagal, mencoba metode 3...', error2);
                 
-            } catch (error) {
-                console.error('Error mengirim ke Google Sheets:', error);
-                throw error;
+                // Metode 3: Menggunakan Google Forms approach
+                try {
+                    // Format data sebagai URL parameters
+                    const params = new URLSearchParams();
+                    Object.keys(payload).forEach(key => {
+                        params.append(key, payload[key]);
+                    });
+                    
+                    response = await fetch(GOOGLE_SCRIPT_URL + '?' + params.toString(), {
+                        method: 'GET',
+                        mode: 'no-cors'
+                    });
+                    
+                    console.log('Request GET terkirim');
+                    return 'success';
+                    
+                } catch (error3) {
+                    console.error('Semua metode gagal:', error3);
+                    throw new Error('Gagal mengirim data ke server');
+                }
             }
         }
+        
+    } catch (error) {
+        console.error('Error mengirim ke Google Sheets:', error);
+        throw error;
+    }
+}
 
-        // Simpan data pending
-        function savePendingSubmission(data) {
-            const existingIndex = pendingSubmissions.findIndex(item => 
-                item.email === data.email && item.standId === data.standId
+// Fungsi untuk test koneksi ke Google Sheets
+async function testGoogleSheetsConnection() {
+    try {
+        console.log('Testing koneksi ke Google Sheets...');
+        
+        const testData = {
+            action: 'test',
+            timestamp: new Date().toISOString(),
+            test: true
+        };
+        
+        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=test&timestamp=' + new Date().getTime(), {
+            method: 'GET',
+            mode: 'no-cors'
+        });
+        
+        console.log('Test connection completed');
+        return true;
+    } catch (error) {
+        console.error('Test connection failed:', error);
+        return false;
+    }
+}
+
+// Handle rating submission - DIPERBAIKI
+async function handleRatingSubmit(e) {
+    e.preventDefault();
+    
+    if (!currentStand) return;
+    
+    const ratings = {};
+    const criteria = ['stand', 'pelayanan', 'konten', 'rasa'];
+    let allRated = true;
+    
+    criteria.forEach(criterion => {
+        const ratingInput = document.querySelector(`input[name="${criterion}"]:checked`);
+        if (ratingInput) {
+            ratings[criterion] = parseInt(ratingInput.value);
+        } else {
+            allRated = false;
+        }
+    });
+    
+    if (!allRated) {
+        showAlert('Harap beri nilai untuk semua kriteria!', 'warning');
+        return;
+    }
+    
+    showLoading(true, 'Menyimpan penilaian...');
+    
+    const ratingData = {
+        email: currentUser,
+        standId: currentStand.id,
+        standName: currentStand.name,
+        jurusan: currentStand.jurusan,
+        category: currentStand.category,
+        ratings: ratings,
+        average: calculateAverageRating(ratings),
+        timestamp: new Date().toISOString(),
+        sekolah: "SMK Negeri 1 Purbalingga"
+    };
+    
+    console.log('Data rating yang akan dikirim:', ratingData);
+    
+    // Simpan ke localStorage terlebih dahulu
+    userData[currentUser].ratings[currentStand.id] = {
+        ...ratingData,
+        synced: false
+    };
+    
+    userData[currentUser].lastActivity = new Date().toISOString();
+    saveUserData();
+    
+    try {
+        // Test koneksi terlebih dahulu
+        const connectionTest = await testGoogleSheetsConnection();
+        
+        if (connectionTest) {
+            // Coba kirim ke Google Sheets
+            await sendToGoogleSheets(ratingData);
+            
+            // Update status jadi synced
+            userData[currentUser].ratings[currentStand.id].synced = true;
+            saveUserData();
+            
+            showLoading(false);
+            showStandList();
+            showAlert(`Penilaian untuk ${currentStand.name} berhasil disimpan dan dikirim ke server!`, 'success');
+        } else {
+            throw new Error('Tidak dapat terhubung ke server');
+        }
+        
+    } catch (error) {
+        console.error('Gagal mengirim ke server:', error);
+        
+        // Simpan sebagai pending jika gagal
+        savePendingSubmission(ratingData);
+        showLoading(false);
+        showStandList();
+        showAlert(`Penilaian disimpan secara lokal. Akan sync otomatis saat online: ${error.message}`, 'info');
+    }
+    
+    updateSyncStatus();
+}
+
+// Process pending submissions - DIPERBAIKI
+async function processPendingSubmissions() {
+    if (pendingSubmissions.length === 0 || !navigator.onLine) {
+        showAlert('Tidak ada data pending untuk disinkronisasi', 'info');
+        return;
+    }
+
+    showLoading(true, 'Sync data pending...');
+    
+    const successItems = [];
+    const failedItems = [];
+    
+    // Buat salinan array untuk diiterasi
+    const submissionsToProcess = [...pendingSubmissions];
+    
+    for (const item of submissionsToProcess) {
+        try {
+            console.log('Processing pending submission:', item);
+            await sendToGoogleSheets(item);
+            successItems.push(item);
+            
+            // Hapus dari pending
+            pendingSubmissions = pendingSubmissions.filter(pending => 
+                !(pending.email === item.email && pending.standId === item.standId)
             );
             
-            if (existingIndex === -1) {
-                pendingSubmissions.push({
-                    ...data,
-                    retryCount: 0,
-                    lastTry: new Date().toISOString(),
-                    created: new Date().toISOString()
-                });
-                localStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
+            // Update status di userData
+            if (userData[item.email] && userData[item.email].ratings[item.standId]) {
+                userData[item.email].ratings[item.standId].synced = true;
+            }
+            
+            console.log('Successfully synced item:', item);
+            
+        } catch (error) {
+            console.error('Gagal sync item:', item, error);
+            item.retryCount = (item.retryCount || 0) + 1;
+            item.lastTry = new Date().toISOString();
+            
+            if (item.retryCount >= 3) {
+                failedItems.push(item);
+                pendingSubmissions = pendingSubmissions.filter(pending => 
+                    !(pending.email === item.email && pending.standId === item.standId)
+                );
+                console.log('Item failed after 3 retries:', item);
             }
         }
+        
+        // Delay antar request untuk hindari rate limit
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    localStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
+    saveUserData();
+    showLoading(false);
+    
+    if (successItems.length > 0) {
+        showAlert(`Berhasil sync ${successItems.length} data ke Google Sheets`, 'success');
+    }
+    if (failedItems.length > 0) {
+        showAlert(`${failedItems.length} data gagal sync setelah 3 percobaan`, 'warning');
+    }
+    
+    updateSyncStatus();
+    loadStandList(); // Refresh tampilan
+}
 
-        // Proses data pending
-        async function processPendingSubmissions() {
-            if (pendingSubmissions.length === 0 || !navigator.onLine) {
-                return;
-            }
+// Tambahkan fungsi debug
+function debugSubmissions() {
+    console.log('Pending Submissions:', pendingSubmissions);
+    console.log('User Data:', userData);
+    showAlert(`Data pending: ${pendingSubmissions.length} items`, 'info');
+}
 
-            showLoading(true, 'Sync data pending...');
-            
-            const successItems = [];
-            const failedItems = [];
-            
-            for (const item of [...pendingSubmissions]) {
-                try {
-                    await sendToGoogleSheets(item);
-                    successItems.push(item);
-                    
-                    // Hapus dari pending
-                    pendingSubmissions = pendingSubmissions.filter(pending => 
-                        !(pending.email === item.email && pending.standId === item.standId)
-                    );
-                    
-                    // Update status di userData
-                    if (userData[item.email] && userData[item.email].ratings[item.standId]) {
-                        userData[item.email].ratings[item.standId].synced = true;
-                    }
-                    
-                } catch (error) {
-                    console.error('Gagal sync item:', item, error);
-                    item.retryCount = (item.retryCount || 0) + 1;
-                    item.lastTry = new Date().toISOString();
-                    
-                    if (item.retryCount >= 3) {
-                        failedItems.push(item);
-                        pendingSubmissions = pendingSubmissions.filter(pending => 
-                            !(pending.email === item.email && pending.standId === item.standId)
-                        );
-                    }
-                }
-                
-                // Delay antar request untuk hindari rate limit
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            
-            localStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
-            saveUserData();
-            showLoading(false);
-            
-            if (successItems.length > 0) {
-                showAlert(`Berhasil sync ${successItems.length} data ke Google Sheets`, 'success');
-            }
-            if (failedItems.length > 0) {
-                showAlert(`${failedItems.length} data gagal sync setelah 3 percobaan`, 'warning');
-            }
-            
-            updateSyncStatus();
-        }
-
-        // Update sync status
-        function updateSyncStatus() {
-            const pendingCount = pendingSubmissions.length;
-            const isOnline = navigator.onLine;
-            
-            if (pendingCount > 0) {
-                syncStatus.classList.remove('d-none');
-                syncStatus.className = `sync-status ${isOnline ? 'sync-online' : 'sync-offline'}`;
-                syncText.textContent = isOnline ? 
-                    `${pendingCount} data pending - Online` : 
-                    `${pendingCount} data pending - Offline`;
-            } else {
-                syncStatus.classList.add('d-none');
-            }
-        }
+// Tambahkan debug button di event listeners
+function setupEventListeners() {
+    emailForm.addEventListener('submit', handleEmailSubmit);
+    ratingForm.addEventListener('submit', handleRatingSubmit);
+    backButton.addEventListener('click', showStandList);
+    logoutButton.addEventListener('click', handleLogout);
+    viewChartsButton.addEventListener('click', showCharts);
+    backToStandsButton.addEventListener('click', showStandListFromCharts);
+    syncButton.addEventListener('click', processPendingSubmissions);
+    
+    // Tambahkan debug button
+    const debugButton = document.createElement('button');
+    debugButton.textContent = 'Debug';
+    debugButton.className = 'btn btn-secondary btn-sm ml-2';
+    debugButton.onclick = debugSubmissions;
+    document.querySelector('header .text-center div').appendChild(debugButton);
+    
+    // Event online/offline
+    window.addEventListener('online', function() {
+        updateSyncStatus();
+        showAlert('Koneksi internet tersedia', 'success');
+        processPendingSubmissions();
+    });
+    
+    window.addEventListener('offline', function() {
+        updateSyncStatus();
+        showAlert('Anda sedang offline', 'warning');
+    });
+}
 
         // ==============================
         // FUNGSI UTAMA APLIKASI
@@ -1102,4 +1231,5 @@
 </body>
 
 </html>
+
 
