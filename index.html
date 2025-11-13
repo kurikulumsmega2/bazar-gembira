@@ -398,152 +398,1155 @@
     </div>
 
     <script>
-// ==============================
-// KONFIGURASI GOOGLE SHEETS - DIPERBAIKI
-// ==============================
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresiasi Bazar Kokurikuler Entrepreunership SMK Negeri 1 Purbalingga</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .star-rating {
+            display: flex;
+            gap: 5px;
+        }
 
-// URL Google Apps Script Anda
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw565ZKb5OwrCS9L9qYp79oa6gRlmUMUOHvMAf61f5Sye__ZjNvuKK-T4FTg-TClaY/exec';
+        .star-rating input {
+            display: none;
+        }
 
-// Fungsi utama untuk kirim data ke Google Sheets - DIPERBAIKI
-async function sendToGoogleSheets(data) {
-    // Cek koneksi internet
-    if (!navigator.onLine) {
-        throw new Error('Tidak ada koneksi internet');
-    }
+        .star-rating label {
+            font-size: 1.5rem;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
 
-    try {
-        console.log('Mengirim data ke Google Sheets:', data);
-        
-        // Format data sesuai dengan yang diharapkan Google Apps Script
-        const payload = {
-            action: 'submitRating',
-            email: data.email,
-            standId: data.standId,
-            standName: data.standName,
-            jurusan: data.jurusan,
-            category: data.category,
-            rating_stand: data.ratings.stand,
-            rating_pelayanan: data.ratings.pelayanan,
-            rating_konten: data.ratings.konten,
-            rating_rasa: data.ratings.rasa,
-            average: data.average,
-            timestamp: data.timestamp,
-            sekolah: data.sekolah
-        };
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label {
+            color: #ffc107;
+        }
 
-        // Gunakan FormData untuk menghindari CORS issues
-        const formData = new FormData();
-        formData.append('data', JSON.stringify(payload));
+        .stand-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
 
-        // Coba beberapa metode pengiriman
-        let response;
-        
-        // Metode 1: Menggunakan fetch dengan FormData
-        try {
-            response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                body: formData,
-                mode: 'no-cors' // Mode no-cors untuk menghindari CORS issues
-            });
+        .stand-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stand-card.rated {
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-fixed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+
+        .rating-criteria {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .criteria-label {
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .stand-list-item {
+            display: grid;
+            grid-template-columns: 100px 150px 1fr 120px;
+            gap: 15px;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+
+        .stand-list-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .stand-list-item.rated {
+            background-color: #f0fff4;
+        }
+
+        .jurusan-badge {
+            font-size: 0.7rem;
+        }
+
+        .school-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-right: 15px;
+        }
+
+        .school-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .school-info {
+            text-align: center;
+        }
+
+        .school-name {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .school-motto {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 9999;
+        }
+
+        .sync-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            z-index: 1000;
+        }
+
+        .sync-online {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .sync-offline {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
             
-            // Dengan no-cors, kita tidak bisa membaca response, tapi request tetap terkirim
-            console.log('Request terkirim dengan mode no-cors');
-            return 'success';
+            .school-logo {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
             
-        } catch (error) {
-            console.log('Metode 1 gagal, mencoba metode 2...', error);
+            .stand-list-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                text-align: center;
+            }
             
-            // Metode 2: Menggunakan fetch dengan JSON dan header sederhana
-            try {
-                response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `data=${encodeURIComponent(JSON.stringify(payload))}`
-                });
-                
-                if (response.ok) {
-                    const result = await response.text();
-                    console.log('Response dari Google Sheets:', result);
-                    return result;
-                } else {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-            } catch (error2) {
-                console.log('Metode 2 gagal, mencoba metode 3...', error2);
-                
-                // Metode 3: Menggunakan Google Forms approach
-                try {
-                    // Format data sebagai URL parameters
-                    const params = new URLSearchParams();
-                    Object.keys(payload).forEach(key => {
-                        params.append(key, payload[key]);
-                    });
-                    
-                    response = await fetch(GOOGLE_SCRIPT_URL + '?' + params.toString(), {
-                        method: 'GET',
-                        mode: 'no-cors'
-                    });
-                    
-                    console.log('Request GET terkirim');
-                    return 'success';
-                    
-                } catch (error3) {
-                    console.error('Semua metode gagal:', error3);
-                    throw new Error('Gagal mengirim data ke server');
-                }
+            .rating-criteria {
+                grid-template-columns: 1fr;
+                gap: 10px;
             }
         }
-        
-    } catch (error) {
-        console.error('Error mengirim ke Google Sheets:', error);
-        throw error;
-    }
-}
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p class="mt-2" id="loading-text">Menyimpan data...</p>
+    </div>
 
-// Fungsi untuk test koneksi ke Google Sheets
-async function testGoogleSheetsConnection() {
-    try {
-        console.log('Testing koneksi ke Google Sheets...');
-        
-        const testData = {
-            action: 'test',
-            timestamp: new Date().toISOString(),
-            test: true
-        };
-        
-        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=test&timestamp=' + new Date().getTime(), {
-            method: 'GET',
-            mode: 'no-cors'
-        });
-        
-        console.log('Test connection completed');
-        return true;
-    } catch (error) {
-        console.error('Test connection failed:', error);
-        return false;
-    }
-}
+    <!-- Sync Status -->
+    <div id="sync-status" class="sync-status d-none">
+        <span id="sync-text"></span>
+    </div>
 
-// Handle rating submission - DIPERBAIKI
-async function handleRatingSubmit(e) {
-    e.preventDefault();
-    
-    if (!currentStand) return;
-    
-    const ratings = {};
-    const criteria = ['stand', 'pelayanan', 'konten', 'rasa'];
-    let allRated = true;
-    
-    criteria.forEach(criterion => {
-        const ratingInput = document.querySelector(`input[name="${criterion}"]:checked`);
-        if (ratingInput) {
-            ratings[criterion] = parseInt(ratingInput.value);
-        } else {
-            allRated = false;
+    <div class="container-fluid mt-3">
+        <!-- Halaman Input Email -->
+        <div id="email-entry-page">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header text-center">
+                            <div class="header-content">
+                                <img src="https://upload.wikimedia.org/wikipedia/id/thumb/a/a4/Logo_SMK_Negeri_1_Purbalingga.png/1024px-Logo_SMK_Negeri_1_Purbalingga.png" 
+                                     alt="Logo SMK Negeri 1 Purbalingga" class="school-logo">
+                                <div>
+                                    <h2>Selamat Datang di Apresiasi Bazar </h2>
+                                    <p class="mb-0">SMK Negeri 1 Purbalingga</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-center">Silakan masukkan email Anda untuk mulai memberikan penilaian.</p>
+                            <form id="email-form">
+                                <div class="form-group">
+                                    <label for="user-email">Alamat Email</label>
+                                    <input type="email" class="form-control" id="user-email" placeholder="nama@example.com" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Utama -->
+        <div id="main-content" class="d-none">
+            <!-- Header Sekolah -->
+            <div class="school-header">
+                <div class="container">
+                    <div class="header-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/id/thumb/a/a4/Logo_SMK_Negeri_1_Purbalingga.png/1024px-Logo_SMK_Negeri_1_Purbalingga.png" 
+                             alt="Logo SMK Negeri 1 Purbalingga" class="school-logo">
+                        <div class="school-info">
+                            <div class="school-name">SMK NEGERI 1 PURBALINGGA</div>
+                            <div class="school-motto">"Smart Innovative"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <header class="text-center mb-4">
+                    <h1 class="display-5">Apresiasi Bazar Kokurikuler Entrepreunership</h1>
+                    <p class="lead">Pilih stand yang ingin anda beri apresiasi, anda hanya dapat memberi apresiasi sekali saja untuk setiap stand.</p>
+                    <p class="text-muted">Login sebagai: <span id="current-user-email" class="font-weight-bold text-primary"></span></p>
+                    <div>
+                        <button id="logout-button" class="btn btn-outline-light btn-sm mr-2">Logout</button>
+                        <button id="view-charts-button" class="btn btn-info btn-sm">Lihat Grafik</button>
+                        <button id="sync-button" class="btn btn-warning btn-sm ml-2">Sync Data</button>
+                        <button onclick="testConnectionAndAlert()" class="btn btn-success btn-sm ml-2">Test Connection</button>
+                    </div>
+                </header>
+
+                <!-- Statistik -->
+                <div id="stats-section" class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <h5>Total Stand</h5>
+                            <h3 id="total-stands">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <h5>Sudah Dinilai</h5>
+                            <h3 id="rated-stands">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <h5>Belum Dinilai</h5>
+                            <h3 id="unrated-stands">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                            <h5>Rating Rata-rata</h5>
+                            <h3 id="average-rating">0.0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grafik Statistik -->
+                <div id="charts-section" class="d-none">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <h5 class="text-center">Rating Rata-rata per Jurusan</h5>
+                                <canvas id="jurusanChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <h5 class="text-center">Distribusi Rating per Kriteria</h5>
+                                <canvas id="criteriaChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="chart-container">
+                                <h5 class="text-center">Ranking Stand Berdasarkan Rating</h5>
+                                <canvas id="rankingChart" height="100"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button id="back-to-stands" class="btn btn-secondary">Kembali ke Daftar Stand</button>
+                    </div>
+                </div>
+
+                <!-- Daftar Stand dalam Layout Vertikal -->
+                <div id="stands-section">
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h4 class="mb-0">Daftar Stand Bazaar - SMK Negeri 1 Purbalingga</h4>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Header List -->
+                            <div class="stand-list-item bg-light font-weight-bold">
+                                <div>Kode</div>
+                                <div>Jurusan</div>
+                                <div>Nama Stand</div>
+                                <div class="text-center">Status</div>
+                            </div>
+                            
+                            <!-- Daftar Stand -->
+                            <div id="stand-list">
+                                <!-- Daftar stand akan dimuat oleh JavaScript di sini -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Halaman Penilaian -->
+                <div id="rating-page" class="d-none mt-4">
+                    <button id="back-button" class="btn btn-secondary mb-3">&larr; Kembali ke Daftar Stand</button>
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h3 id="rating-stand-name" class="mb-0"></h3>
+                            <small id="rating-stand-jurusan" class="text-light"></small>
+                        </div>
+                        <div class="card-body">
+                            <form id="rating-form">
+                                <!-- Kriteria penilaian dalam layout horizontal -->
+                                <div class="rating-criteria">
+                                    <label class="criteria-label">Display & Kebersihan Stand</label>
+                                    <div class="star-rating" data-criteria="stand"></div>
+                                </div>
+                                <div class="rating-criteria">
+                                    <label class="criteria-label">Keramahan & Kecepatan Pelayanan</label>
+                                    <div class="star-rating" data-criteria="pelayanan"></div>
+                                </div>
+                                <div class="rating-criteria">
+                                    <label class="criteria-label">Kreativitas & Konsep</label>
+                                    <div class="star-rating" data-criteria="konten"></div>
+                                </div>
+                                <div class="rating-criteria">
+                                    <label class="criteria-label">Rasa Masakan</label>
+                                    <div class="star-rating" data-criteria="rasa"></div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg btn-block mt-4">Kirim Penilaian</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==============================
+        // KONFIGURASI GOOGLE SHEETS
+        // ==============================
+        
+        // URL Google Apps Script Anda
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpTxSeW3sCeJ_AChc7xUGsDWsNJlD9p0tkohsvEVH9GfGROlBBLEwhXDXKyfX2HUXN/exec';
+        
+        // Data stand
+        const stands = [
+            { id: 1, name: "AKL 1", jurusan: "Akutansi dan Keuangan Lembaga", description: "Stand kelas AKL 1", category: "AKL" },
+            { id: 2, name: "AKL 2", jurusan: "Akutansi dan Keuangan Lembaga", description: "Stand kelas AKL 2", category: "AKL" },
+            { id: 3, name: "AKL 3", jurusan: "Akutansi dan Keuangan Lembaga", description: "Stand kelas AKL 3", category: "AKL" },
+            { id: 4, name: "MPLB 1", jurusan: "Manajemen Perkantoran dan Layanan Bisnis", description: "Stand kelas MPLB 1", category: "MPLB" },
+            { id: 5, name: "MPLB 2", jurusan: "Manajemen Perkantoran dan Layanan Bisnis", description: "Stand kelas MPLB 2", category: "MPLB" },
+            { id: 6, name: "MPLB 3", jurusan: "Manajemen Perkantoran dan Layanan Bisnis", description: "Stand kelas MPLB 3", category: "MPLB" },
+            { id: 7, name: "PPLG 1", jurusan: "Pengembangan Perangkat Lunak dan Gim", description: "Stand kelas PPLG 1", category: "PPLG" },
+            { id: 8, name: "PPLG 2", jurusan: "Pengembangan Perangkat Lunak dan Gim", description: "Stand kelas PPLG 2", category: "PPLG" },
+            { id: 9, name: "TJKT 1", jurusan: "Teknik Jaringan Komputer dan Telekomunikasi", description: "Stand kelas TJKT 1", category: "TJKT" },
+            { id: 10, name: "TJKT 2", jurusan: "Teknik Jaringan Komputer dan Telekomunikasi", description: "Stand kelas TJKT 2", category: "TJKT" },
+            { id: 11, name: "KLN 1", jurusan: "Kuliner", description: "Stand kelas Kuliner", category: "KLN" },
+            { id: 12, name: "KDS 1", jurusan: "Kecantikan dan Spa", description: "Stand kelas Kecantikan", category: "KDS" },
+            { id: 13, name: "BD 1", jurusan: "Pemasaran", description: "Stand kelas Pemasaran BD 1", category: "PM" },
+            { id: 14, name: "BR 2", jurusan: "Pemasaran", description: "Stand kelas Pemasaran BR 2", category: "PM" }
+        ];
+
+        // Data management
+        let userData = JSON.parse(localStorage.getItem('bazaarRatings')) || {};
+        let pendingSubmissions = JSON.parse(localStorage.getItem('pendingSubmissions')) || [];
+        let currentUser = '';
+        let currentStand = null;
+        let charts = {};
+
+        // Elemen DOM
+        const emailEntryPage = document.getElementById('email-entry-page');
+        const mainContent = document.getElementById('main-content');
+        const standList = document.getElementById('stand-list');
+        const ratingPage = document.getElementById('rating-page');
+        const standsSection = document.getElementById('stands-section');
+        const chartsSection = document.getElementById('charts-section');
+        const currentUserEmail = document.getElementById('current-user-email');
+        const ratingStandName = document.getElementById('rating-stand-name');
+        const ratingStandJurusan = document.getElementById('rating-stand-jurusan');
+        const emailForm = document.getElementById('email-form');
+        const ratingForm = document.getElementById('rating-form');
+        const backButton = document.getElementById('back-button');
+        const logoutButton = document.getElementById('logout-button');
+        const viewChartsButton = document.getElementById('view-charts-button');
+        const backToStandsButton = document.getElementById('back-to-stands');
+        const syncButton = document.getElementById('sync-button');
+        const totalStands = document.getElementById('total-stands');
+        const ratedStands = document.getElementById('rated-stands');
+        const unratedStands = document.getElementById('unrated-stands');
+        const averageRating = document.getElementById('average-rating');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const loadingText = document.getElementById('loading-text');
+        const syncStatus = document.getElementById('sync-status');
+        const syncText = document.getElementById('sync-text');
+
+        // ==============================
+        // FUNGSI INTEGRASI GOOGLE SHEETS
+        // ==============================
+
+        // Fungsi test koneksi
+        async function testConnection() {
+            try {
+                showLoading(true, 'Testing connection...');
+                const response = await fetch(GOOGLE_SCRIPT_URL + '?action=test&t=' + Date.now());
+                const result = await response.json();
+                console.log('Test connection result:', result);
+                showLoading(false);
+                return result.status === 'success';
+            } catch (error) {
+                console.error('Test connection failed:', error);
+                showLoading(false);
+                return false;
+            }
+        }
+
+        // Fungsi test dengan alert
+        async function testConnectionAndAlert() {
+            const isConnected = await testConnection();
+            if (isConnected) {
+                showAlert('✅ Koneksi ke Google Sheets BERHASIL!', 'success');
+            } else {
+                showAlert('❌ Koneksi ke Google Sheets GAGAL. Cek console untuk detail.', 'danger');
+            }
+        }
+
+        // Fungsi utama untuk kirim data ke Google Sheets
+        async function sendToGoogleSheets(data) {
+            if (!navigator.onLine) {
+                throw new Error('Tidak ada koneksi internet');
+            }
+
+            try {
+                console.log('Sending to Google Sheets:', data);
+                
+                // Format data yang sederhana
+                const payload = {
+                    email: data.email,
+                    standId: data.standId,
+                    standName: data.standName,
+                    jurusan: data.jurusan,
+                    category: data.category,
+                    ratings: data.ratings,
+                    average: data.average,
+                    timestamp: data.timestamp,
+                    sekolah: data.sekolah
+                };
+
+                // Kirim sebagai form data (lebih kompatibel)
+                const formData = new URLSearchParams();
+                formData.append('data', JSON.stringify(payload));
+
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                console.log('Google Sheets response:', result);
+                
+                if (result.status === 'success') {
+                    return result;
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                console.error('Error sending to Google Sheets:', error);
+                throw error;
+            }
+        }
+
+        // Simpan data pending
+        function savePendingSubmission(data) {
+            const existingIndex = pendingSubmissions.findIndex(item => 
+                item.email === data.email && item.standId === data.standId
+            );
+            
+            if (existingIndex === -1) {
+                pendingSubmissions.push({
+                    ...data,
+                    retryCount: 0,
+                    lastTry: new Date().toISOString(),
+                    created: new Date().toISOString()
+                });
+                localStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
+            }
+        }
+
+        // Proses data pending
+        async function processPendingSubmissions() {
+            if (pendingSubmissions.length === 0) {
+                showAlert('Tidak ada data pending', 'info');
+                return;
+            }
+
+            if (!navigator.onLine) {
+                showAlert('Tidak ada koneksi internet', 'warning');
+                return;
+            }
+
+            showLoading(true, 'Sync data...');
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (let i = 0; i < pendingSubmissions.length; i++) {
+                const item = pendingSubmissions[i];
+                try {
+                    await sendToGoogleSheets(item);
+                    successCount++;
+                    
+                    // Hapus dari pending
+                    pendingSubmissions.splice(i, 1);
+                    i--;
+                    
+                    // Update userData
+                    if (userData[item.email]?.ratings[item.standId]) {
+                        userData[item.email].ratings[item.standId].synced = true;
+                    }
+                    
+                } catch (error) {
+                    console.error('Gagal sync:', error);
+                    failCount++;
+                }
+                
+                // Delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            // Simpan perubahan
+            localStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
+            saveUserData();
+            showLoading(false);
+            
+            if (successCount > 0) {
+                showAlert(`✅ ${successCount} data berhasil sync!`, 'success');
+            }
+            if (failCount > 0) {
+                showAlert(`❌ ${failCount} data gagal sync`, 'warning');
+            }
+            
+            updateSyncStatus();
+            loadStandList();
+        }
+
+        // Update sync status
+        function updateSyncStatus() {
+            const pendingCount = pendingSubmissions.length;
+            const isOnline = navigator.onLine;
+            
+            if (pendingCount > 0) {
+                syncStatus.classList.remove('d-none');
+                syncStatus.className = `sync-status ${isOnline ? 'sync-online' : 'sync-offline'}`;
+                syncText.textContent = isOnline ? 
+                    `${pendingCount} data pending - Online` : 
+                    `${pendingCount} data pending - Offline`;
+            } else {
+                syncStatus.classList.add('d-none');
+            }
+        }
+
+        // ==============================
+        // FUNGSI UTAMA APLIKASI
+        // ==============================
+
+        // Inisialisasi aplikasi
+        function initApp() {
+            generateStarRatings();
+            setupEventListeners();
+            updateSyncStatus();
+            
+            // Cek jika ada user yang sudah login
+            const lastUser = localStorage.getItem('lastUser');
+            if (lastUser && userData[lastUser]) {
+                currentUser = lastUser;
+                currentUserEmail.textContent = currentUser;
+                showMainContent();
+            }
+
+            // Test connection setelah 2 detik
+            setTimeout(testConnectionAndAlert, 2000);
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            emailForm.addEventListener('submit', handleEmailSubmit);
+            ratingForm.addEventListener('submit', handleRatingSubmit);
+            backButton.addEventListener('click', showStandList);
+            logoutButton.addEventListener('click', handleLogout);
+            viewChartsButton.addEventListener('click', showCharts);
+            backToStandsButton.addEventListener('click', showStandListFromCharts);
+            syncButton.addEventListener('click', processPendingSubmissions);
+            
+            // Event online/offline
+            window.addEventListener('online', function() {
+                updateSyncStatus();
+                showAlert('Koneksi internet tersedia', 'success');
+                processPendingSubmissions();
+            });
+            
+            window.addEventListener('offline', function() {
+                updateSyncStatus();
+                showAlert('Anda sedang offline', 'warning');
+            });
+        }
+
+        // Handle email submission
+        function handleEmailSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('user-email').value.trim();
+            
+            if (email && validateEmail(email)) {
+                currentUser = email;
+                currentUserEmail.textContent = email;
+                
+                if (!userData[email]) {
+                    userData[email] = {
+                        ratings: {},
+                        lastActivity: new Date().toISOString()
+                    };
+                    saveUserData();
+                }
+                
+                localStorage.setItem('lastUser', email);
+                showMainContent();
+            } else {
+                showAlert('Masukkan alamat email yang valid!', 'danger');
+            }
+        }
+
+        // Handle rating submission
+        async function handleRatingSubmit(e) {
+            e.preventDefault();
+            
+            if (!currentStand) return;
+            
+            // Ambil rating values
+            const ratings = {
+                stand: parseInt(document.querySelector('input[name="stand"]:checked')?.value || 0),
+                pelayanan: parseInt(document.querySelector('input[name="pelayanan"]:checked')?.value || 0),
+                konten: parseInt(document.querySelector('input[name="konten"]:checked')?.value || 0),
+                rasa: parseInt(document.querySelector('input[name="rasa"]:checked')?.value || 0)
+            };
+            
+            // Validasi
+            if (Object.values(ratings).some(rating => rating === 0)) {
+                showAlert('Harap beri nilai untuk semua kriteria!', 'warning');
+                return;
+            }
+            
+            showLoading(true, 'Menyimpan penilaian...');
+            
+            const ratingData = {
+                email: currentUser,
+                standId: currentStand.id,
+                standName: currentStand.name,
+                jurusan: currentStand.jurusan,
+                category: currentStand.category,
+                ratings: ratings,
+                average: calculateAverageRating(ratings),
+                timestamp: new Date().toISOString(),
+                sekolah: "SMK Negeri 1 Purbalingga"
+            };
+            
+            console.log('Data yang akan dikirim:', ratingData);
+            
+            // Simpan ke localStorage dulu
+            if (!userData[currentUser]) {
+                userData[currentUser] = { ratings: {} };
+            }
+            userData[currentUser].ratings[currentStand.id] = {
+                ...ratingData,
+                synced: false
+            };
+            saveUserData();
+            
+            try {
+                // Kirim ke Google Sheets
+                const result = await sendToGoogleSheets(ratingData);
+                
+                // Update status
+                userData[currentUser].ratings[currentStand.id].synced = true;
+                saveUserData();
+                
+                showLoading(false);
+                showStandList();
+                showAlert(`✅ Penilaian untuk ${currentStand.name} berhasil disimpan! ${result.message}`, 'success');
+                
+            } catch (error) {
+                console.error('Gagal kirim ke server:', error);
+                
+                // Simpan sebagai pending
+                savePendingSubmission(ratingData);
+                showLoading(false);
+                showStandList();
+                showAlert(`💾 Penilaian disimpan offline. Error: ${error.message}`, 'info');
+            }
+            
+            updateSyncStatus();
+            loadStandList();
+        }
+
+        // Tampilkan loading
+        function showLoading(show, text = 'Menyimpan data...') {
+            loadingText.textContent = text;
+            loadingSpinner.style.display = show ? 'block' : 'none';
+        }
+
+        // Simpan data ke localStorage
+        function saveUserData() {
+            localStorage.setItem('bazaarRatings', JSON.stringify(userData));
+        }
+
+        // Generate star rating elements
+        function generateStarRatings() {
+            document.querySelectorAll('.star-rating').forEach(container => {
+                const criteria = container.dataset.criteria;
+                container.innerHTML = '';
+                
+                for (let i = 5; i >= 1; i--) {
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = criteria;
+                    input.value = i;
+                    input.id = `${criteria}-${i}`;
+                    input.required = true;
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `${criteria}-${i}`;
+                    label.innerHTML = '★';
+                    label.title = `${i} bintang`;
+                    
+                    container.appendChild(input);
+                    container.appendChild(label);
+                }
+            });
+        }
+
+        // Validasi email
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Tampilkan alert
+        function showAlert(message, type) {
+            const existingAlert = document.querySelector('.alert-fixed');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-fixed alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            `;
+            
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 4000);
+        }
+
+        // Hitung rating rata-rata
+        function calculateAverageRating(rating) {
+            const criteria = ['stand', 'pelayanan', 'konten', 'rasa'];
+            const total = criteria.reduce((sum, criterion) => sum + (rating[criterion] || 0), 0);
+            return total / criteria.length;
+        }
+
+        // Tampilkan daftar stand
+        function showStandList() {
+            ratingPage.classList.add('d-none');
+            chartsSection.classList.add('d-none');
+            standsSection.classList.remove('d-none');
+            loadStandList();
+            updateStats();
+            updateSyncStatus();
+        }
+
+        // Tampilkan dari charts ke stands
+        function showStandListFromCharts() {
+            chartsSection.classList.add('d-none');
+            standsSection.classList.remove('d-none');
+        }
+
+        // Tampilkan grafik
+        function showCharts() {
+            standsSection.classList.add('d-none');
+            chartsSection.classList.remove('d-none');
+            renderCharts();
+        }
+
+        // Tampilkan halaman rating
+        function showRatingPage(stand) {
+            currentStand = stand;
+            ratingStandName.textContent = stand.name;
+            ratingStandJurusan.textContent = stand.jurusan;
+            standsSection.classList.add('d-none');
+            ratingPage.classList.remove('d-none');
+            
+            ratingForm.reset();
+            document.querySelectorAll('.star-rating input').forEach(input => {
+                input.checked = false;
+            });
+        }
+
+        // Tampilkan konten utama
+        function showMainContent() {
+            emailEntryPage.classList.add('d-none');
+            mainContent.classList.remove('d-none');
+            loadStandList();
+            updateStats();
+            updateSyncStatus();
+        }
+
+        // Muat daftar stand
+        function loadStandList() {
+            standList.innerHTML = '';
+            
+            const userRatings = userData[currentUser]?.ratings || {};
+            
+            stands.forEach(stand => {
+                const hasRated = userRatings[stand.id];
+                const rating = hasRated ? userRatings[stand.id] : null;
+                const averageRating = rating ? calculateAverageRating(rating.ratings) : 0;
+                const isSynced = rating ? rating.synced : false;
+                
+                const standItem = document.createElement('div');
+                standItem.className = `stand-list-item ${hasRated ? 'rated' : ''}`;
+                standItem.innerHTML = `
+                    <div>
+                        <span class="badge badge-primary jurusan-badge">${stand.category}</span>
+                    </div>
+                    <div class="small">${stand.jurusan}</div>
+                    <div>
+                        <strong>${stand.name}</strong>
+                        <div class="small text-muted">${stand.description}</div>
+                        ${hasRated && !isSynced ? '<div class="small text-warning">⚠️ Belum sync</div>' : ''}
+                    </div>
+                    <div class="text-center">
+                        ${hasRated ? 
+                            `<span class="badge badge-success">✓ Dinilai</span>
+                             <div class="small text-warning mt-1">${averageRating.toFixed(1)}★</div>` :
+                            `<button class="btn btn-primary btn-sm" 
+                                onclick="showRatingPage(${JSON.stringify(stand).replace(/"/g, '&quot;')})">
+                                Beri Nilai
+                             </button>`
+                        }
+                    </div>
+                `;
+                
+                standList.appendChild(standItem);
+            });
+        }
+
+        // Update statistik
+        function updateStats() {
+            const userRatings = userData[currentUser]?.ratings || {};
+            const ratedCount = Object.keys(userRatings).length;
+            const totalCount = stands.length;
+            const avgRating = calculateOverallAverageRating();
+            
+            totalStands.textContent = totalCount;
+            ratedStands.textContent = ratedCount;
+            unratedStands.textContent = totalCount - ratedCount;
+            averageRating.textContent = avgRating.toFixed(1);
+        }
+
+        // Hitung rating rata-rata overall
+        function calculateOverallAverageRating() {
+            const userRatings = userData[currentUser]?.ratings || {};
+            let totalRating = 0;
+            let ratingCount = 0;
+            
+            Object.values(userRatings).forEach(rating => {
+                const avg = calculateAverageRating(rating.ratings);
+                totalRating += avg;
+                ratingCount++;
+            });
+            
+            return ratingCount > 0 ? totalRating / ratingCount : 0;
+        }
+
+        // Handle logout
+        function handleLogout() {
+            currentUser = '';
+            localStorage.removeItem('lastUser');
+            mainContent.classList.add('d-none');
+            emailEntryPage.classList.remove('d-none');
+            document.getElementById('user-email').value = '';
+            showAlert('Anda telah logout!', 'info');
+        }
+
+        // Render grafik
+        function renderCharts() {
+            // Hancurkan chart sebelumnya jika ada
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+
+            const userRatings = userData[currentUser]?.ratings || {};
+            
+            // Data untuk grafik
+            const jurusanData = calculateJurusanAverages(userRatings);
+            const criteriaData = calculateCriteriaAverages(userRatings);
+            const rankingData = calculateRanking(userRatings);
+
+            // Grafik Rating per Jurusan
+            const jurusanCtx = document.getElementById('jurusanChart').getContext('2d');
+            charts.jurusan = new Chart(jurusanCtx, {
+                type: 'bar',
+                data: {
+                    labels: jurusanData.labels,
+                    datasets: [{
+                        label: 'Rating Rata-rata',
+                        data: jurusanData.averages,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                            '#9966FF', '#FF9F40', '#FF6384'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 5
+                        }
+                    }
+                }
+            });
+
+            // Grafik Distribusi Kriteria
+            const criteriaCtx = document.getElementById('criteriaChart').getContext('2d');
+            charts.criteria = new Chart(criteriaCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Display & Kebersihan', 'Pelayanan', 'Kreativitas', 'Rasa'],
+                    datasets: [{
+                        label: 'Rating Rata-rata',
+                        data: [
+                            criteriaData.stand,
+                            criteriaData.pelayanan,
+                            criteriaData.konten,
+                            criteriaData.rasa
+                        ],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 5
+                        }
+                    }
+                }
+            });
+
+            // Grafik Ranking
+            const rankingCtx = document.getElementById('rankingChart').getContext('2d');
+            charts.ranking = new Chart(rankingCtx, {
+                type: 'bar',
+                data: {
+                    labels: rankingData.labels,
+                    datasets: [{
+                        label: 'Rating',
+                        data: rankingData.ratings,
+                        backgroundColor: rankingData.ratings.map((rating, index) => 
+                            index < 3 ? '#28a745' : '#17a2b8'
+                        )
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 5
+                        }
+                    }
+                }
+            });
+        }
+
+        // Hitung rata-rata per jurusan
+        function calculateJurusanAverages(ratings) {
+            const jurusanTotals = {};
+            const jurusanCounts = {};
+            
+            stands.forEach(stand => {
+                if (!jurusanTotals[stand.category]) {
+                    jurusanTotals[stand.category] = 0;
+                    jurusanCounts[stand.category] = 0;
+                }
+                
+                if (ratings[stand.id]) {
+                    const avg = calculateAverageRating(ratings[stand.id].ratings);
+                    jurusanTotals[stand.category] += avg;
+                    jurusanCounts[stand.category]++;
+                }
+            });
+            
+            const labels = [];
+            const averages = [];
+            
+            Object.keys(jurusanTotals).forEach(jurusan => {
+                if (jurusanCounts[jurusan] > 0) {
+                    labels.push(jurusan);
+                    averages.push(jurusanTotals[jurusan] / jurusanCounts[jurusan]);
+                }
+            });
+            
+            return { labels, averages };
+        }
+
+        // Hitung rata-rata per kriteria
+        function calculateCriteriaAverages(ratings) {
+            const criteriaTotals = { stand: 0, pelayanan: 0, konten: 0, rasa: 0 };
+            const criteriaCounts = { stand: 0, pelayanan: 0, konten: 0, rasa: 0 };
+            
+            Object.values(ratings).forEach(rating => {
+                Object.keys(criteriaTotals).forEach(criterion => {
+                    if (rating.ratings[criterion]) {
+                        criteriaTotals[criterion] += rating.ratings[criterion];
+                        criteriaCounts[criterion]++;
+                    }
+                });
+            });
+            
+            const averages = {};
+            Object.keys(criteriaTotals).forEach(criterion => {
+                averages[criterion] = criteriaCounts[criterion] > 0 ? 
+                    criteriaTotals[criterion] / criteriaCounts[criterion] : 0;
+            });
+            
+            return averages;
+        }
+
+        // Hitung ranking stand
+        function calculateRanking(ratings) {
+            const standRatings = [];
+            
+            stands.forEach(stand => {
+                if (ratings[stand.id]) {
+                    const avg = calculateAverageRating(ratings[stand.id].ratings);
+                    standRatings.push({
+                        name: stand.name,
+                        rating: avg,
+                        jurusan: stand.category
+                    });
+                }
+            });
+            
+            // Urutkan dari rating tertinggi ke terendah
+            standRatings.sort((a, b) => b.rating - a.rating);
+            
+            const labels = standRatings.map(stand => stand.name);
+            const ratingsData = standRatings.map(stand => stand.rating);
+            
+            return { labels, ratings: ratingsData };
+        }
+
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', initApp);
+        window.showRatingPage = showRatingPage;
+    </script>
+
+    <!-- Script Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
         }
     });
     
@@ -1231,5 +2234,6 @@ function setupEventListeners() {
 </body>
 
 </html>
+
 
 
