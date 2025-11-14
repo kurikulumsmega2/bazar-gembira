@@ -544,7 +544,7 @@
         async function testConnection() {
             try {
                 showLoading(true, 'Testing connection...');
-                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=test&t=${Date.now()}`);
+                const response = await fetch(`${https://script.google.com/macros/s/AKfycbxLezfiVBr3IFvFlauLNZ21uv1hytoDfhjcKPjCjzJpedZDScJnuVe5rqcZ0eb8wzg/exec}?action=test&t=${Date.now()}`);
                 const result = await response.json();
                 console.log('Test connection result:', result);
                 showLoading(false);
@@ -1265,3 +1265,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
