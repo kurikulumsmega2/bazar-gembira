@@ -225,6 +225,7 @@
             color: #6c757d;
             font-size: 0.8rem;
             text-align: center;
+            margin-right: 15px;
         }
 
         @media (max-width: 768px) {
@@ -233,7 +234,7 @@
                 text-align: center;
             }
             
-            .school-logo {
+            .school-logo, .logo-placeholder {
                 margin-right: 0;
                 margin-bottom: 15px;
             }
@@ -279,7 +280,8 @@
                         <div class="card-header text-center">
                             <div class="header-content">
                                 <div class="logo-placeholder">
-                                    Logo SMK
+                                    <div>Logo SMK</div>
+                                    <div>Loading...</div>
                                 </div>
                                 <div>
                                     <h2>Selamat Datang di Apresiasi Bazar</h2>
@@ -310,7 +312,8 @@
                 <div class="container">
                     <div class="header-content">
                         <div class="logo-placeholder">
-                            Logo SMK
+                            <div>Logo SMK</div>
+                            <div>Loading...</div>
                         </div>
                         <div class="school-info">
                             <div class="school-name">SMK NEGERI 1 PURBALINGGA</div>
@@ -454,7 +457,7 @@
         // KONFIGURASI GOOGLE SHEETS
         // ==============================
         
-        // URL Google Apps Script Anda - PERBAIKAN: Ganti dengan URL yang benar
+        // URL Google Apps Script Anda
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLezfiVBr3IFvFlauLNZ21uv1hytoDfhjcKPjCjzJpedZDScJnuVe5rqcZ0eb8wzg/exec';
         
         // Data stand
@@ -510,7 +513,63 @@
         const syncText = document.getElementById('sync-text');
 
         // ==============================
-        // FUNGSI INTEGRASI GOOGLE SHEETS - PERBAIKAN
+        // FUNGSI LOGO - PERBAIKAN BESAR
+        // ==============================
+
+        // URL alternatif untuk logo SMK Negeri 1 Purbalingga
+        const LOGO_URLS = [
+            'https://upload.wikimedia.org/wikipedia/id/thumb/a/a4/Logo_SMK_Negeri_1_Purbalingga.png/960px-Logo_SMK_Negeri_1_Purbalingga.png',
+            'https://i.ibb.co/0Q8L0yZ/smk1purbalingga-logo.png', // Fallback URL
+            'https://via.placeholder.com/80x80/1e3c72/FFFFFF?text=SMK1' // Placeholder sebagai last resort
+        ];
+
+        // Fungsi untuk memuat logo dengan fallback
+        function loadSchoolLogo() {
+            const logoPlaceholders = document.querySelectorAll('.logo-placeholder');
+            
+            logoPlaceholders.forEach(placeholder => {
+                let currentUrlIndex = 0;
+                
+                const tryNextLogo = () => {
+                    if (currentUrlIndex >= LOGO_URLS.length) {
+                        // Semua URL gagal, tampilkan placeholder
+                        placeholder.innerHTML = '<div>Logo SMK</div><div class="small">Tidak tersedia</div>';
+                        placeholder.style.backgroundColor = '#f8d7da';
+                        placeholder.style.color = '#721c24';
+                        return;
+                    }
+                    
+                    const img = new Image();
+                    const currentUrl = LOGO_URLS[currentUrlIndex];
+                    
+                    img.onload = function() {
+                        console.log('Logo loaded successfully from:', currentUrl);
+                        // Ganti placeholder dengan gambar
+                        const parent = placeholder.parentNode;
+                        const newImg = document.createElement('img');
+                        newImg.src = currentUrl;
+                        newImg.alt = 'Logo SMK Negeri 1 Purbalingga';
+                        newImg.className = 'school-logo';
+                        parent.replaceChild(newImg, placeholder);
+                    };
+                    
+                    img.onerror = function() {
+                        console.warn('Failed to load logo from:', currentUrl);
+                        currentUrlIndex++;
+                        // Coba URL berikutnya
+                        setTimeout(tryNextLogo, 100);
+                    };
+                    
+                    img.src = currentUrl;
+                };
+                
+                // Mulai mencoba memuat logo
+                tryNextLogo();
+            });
+        }
+
+        // ==============================
+        // FUNGSI INTEGRASI GOOGLE SHEETS
         // ==============================
 
         // Fungsi test koneksi
@@ -529,7 +588,7 @@
             }
         }
 
-        // Fungsi utama untuk kirim data ke Google Sheets - PERBAIKAN
+        // Fungsi utama untuk kirim data ke Google Sheets
         async function sendToGoogleSheets(data) {
             if (!navigator.onLine) {
                 throw new Error('Tidak ada koneksi internet');
@@ -538,7 +597,7 @@
             try {
                 console.log('Sending to Google Sheets:', data);
                 
-                // Format data yang akan dikirim - PERBAIKAN: format yang lebih sederhana
+                // Format data yang akan dikirim
                 const payload = {
                     action: 'submit',
                     email: data.email,
@@ -552,7 +611,7 @@
                     sekolah: data.sekolah
                 };
 
-                // Kirim data - PERBAIKAN: menggunakan GET untuk menghindari CORS
+                // Kirim data menggunakan GET untuk menghindari CORS
                 const params = new URLSearchParams();
                 Object.keys(payload).forEach(key => {
                     params.append(key, payload[key]);
@@ -563,11 +622,9 @@
                 
                 const response = await fetch(url, {
                     method: 'GET',
-                    mode: 'no-cors' // PERBAIKAN: mode no-cors untuk menghindari CORS issues
+                    mode: 'no-cors'
                 });
 
-                // PERBAIKAN: Karena menggunakan no-cors, kita tidak bisa membaca response
-                // Tapi request tetap akan dikirim
                 console.log('Request sent to Google Sheets');
                 
                 // Simulasikan response sukses
@@ -581,7 +638,6 @@
 
         // Simpan data pending
         function savePendingSubmission(data) {
-            // Cek apakah data sudah ada di pending
             const existingIndex = pendingSubmissions.findIndex(item => 
                 item.email === data.email && item.standId === data.standId
             );
@@ -615,7 +671,6 @@
             const successItems = [];
             const failedItems = [];
             
-            // Buat salinan array untuk diiterasi
             const submissionsToProcess = [...pendingSubmissions];
             
             for (const item of submissionsToProcess) {
@@ -624,12 +679,10 @@
                     await sendToGoogleSheets(item);
                     successItems.push(item);
                     
-                    // Hapus dari pending
                     pendingSubmissions = pendingSubmissions.filter(pending => 
                         !(pending.email === item.email && pending.standId === item.standId)
                     );
                     
-                    // Update status di userData
                     if (userData[item.email] && userData[item.email].ratings[item.standId]) {
                         userData[item.email].ratings[item.standId].synced = true;
                     }
@@ -650,7 +703,6 @@
                     }
                 }
                 
-                // Delay antar request untuk hindari rate limit
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
@@ -666,7 +718,7 @@
             }
             
             updateSyncStatus();
-            loadStandList(); // Refresh tampilan
+            loadStandList();
         }
 
         // Update sync status
@@ -686,7 +738,7 @@
         }
 
         // ==============================
-        // FUNGSI UTAMA APLIKASI - PERBAIKAN
+        // FUNGSI UTAMA APLIKASI
         // ==============================
 
         // Inisialisasi aplikasi
@@ -694,8 +746,8 @@
             generateStarRatings();
             setupEventListeners();
             updateSyncStatus();
+            loadSchoolLogo(); // PERBAIKAN: Panggil fungsi load logo
             
-            // PERBAIKAN: Debug info
             console.log('App initialized');
             console.log('User data from localStorage:', userData);
             console.log('Pending submissions:', pendingSubmissions);
@@ -707,7 +759,6 @@
                 currentUser = lastUser;
                 currentUserEmail.textContent = currentUser;
                 
-                // PERBAIKAN: Pastikan userData untuk user ini ada
                 if (!userData[currentUser]) {
                     userData[currentUser] = {
                         ratings: {},
@@ -722,9 +773,8 @@
             }
         }
 
-        // Setup event listeners - PERBAIKAN
+        // Setup event listeners
         function setupEventListeners() {
-            // PERBAIKAN: Pastikan event listeners terpasang dengan benar
             emailForm.addEventListener('submit', handleEmailSubmit);
             ratingForm.addEventListener('submit', handleRatingSubmit);
             backButton.addEventListener('click', showStandList);
@@ -734,11 +784,9 @@
             syncButton.addEventListener('click', processPendingSubmissions);
             testConnectionButton.addEventListener('click', testConnectionAndAlert);
             
-            // Event online/offline
             window.addEventListener('online', function() {
                 updateSyncStatus();
                 showAlert('Koneksi internet tersedia', 'success');
-                // PERBAIKAN: Otomatis sync ketika online
                 if (pendingSubmissions.length > 0) {
                     processPendingSubmissions();
                 }
@@ -749,11 +797,10 @@
                 showAlert('Anda sedang offline', 'warning');
             });
 
-            // PERBAIKAN: Debug event listeners
             console.log('Event listeners setup completed');
         }
 
-        // Handle email submission - PERBAIKAN
+        // Handle email submission
         function handleEmailSubmit(e) {
             e.preventDefault();
             const email = document.getElementById('user-email').value.trim();
@@ -780,7 +827,7 @@
             }
         }
 
-        // Handle rating submission - PERBAIKAN
+        // Handle rating submission
         async function handleRatingSubmit(e) {
             e.preventDefault();
             
@@ -789,7 +836,6 @@
                 return;
             }
             
-            // Ambil rating values
             const ratings = {};
             const criteria = ['stand', 'pelayanan', 'konten', 'rasa'];
             let allRated = true;
@@ -824,7 +870,6 @@
             
             console.log('Data yang akan dikirim:', ratingData);
             
-            // Simpan ke localStorage dulu
             if (!userData[currentUser]) {
                 userData[currentUser] = { ratings: {} };
             }
@@ -836,11 +881,9 @@
             saveUserData();
             
             try {
-                // Kirim ke Google Sheets
                 console.log('Attempting to send to Google Sheets...');
                 const result = await sendToGoogleSheets(ratingData);
                 
-                // Update status
                 userData[currentUser].ratings[currentStand.id].synced = true;
                 saveUserData();
                 
@@ -851,7 +894,6 @@
             } catch (error) {
                 console.error('Gagal kirim ke server:', error);
                 
-                // Simpan sebagai pending
                 savePendingSubmission(ratingData);
                 showLoading(false);
                 showStandList();
@@ -909,7 +951,7 @@
             });
         }
 
-        // Validasi email yang lebih baik
+        // Validasi email
         function validateEmail(email) {
             const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
             return re.test(email);
@@ -917,7 +959,6 @@
 
         // Tampilkan alert
         function showAlert(message, type) {
-            // Hapus alert lama jika ada
             const existingAlert = document.querySelector('.alert-fixed');
             if (existingAlert) {
                 existingAlert.remove();
@@ -934,7 +975,6 @@
             
             document.body.appendChild(alert);
             
-            // Auto remove setelah 5 detik
             setTimeout(() => {
                 if (alert.parentNode) {
                     alert.remove();
@@ -980,7 +1020,6 @@
             standsSection.classList.add('d-none');
             ratingPage.classList.remove('d-none');
             
-            // Reset form
             ratingForm.reset();
             document.querySelectorAll('.star-rating input').forEach(input => {
                 input.checked = false;
@@ -1077,14 +1116,12 @@
 
         // Render grafik
         function renderCharts() {
-            // Hancurkan chart sebelumnya jika ada
             Object.values(charts).forEach(chart => {
                 if (chart) chart.destroy();
             });
 
             const userRatings = userData[currentUser]?.ratings || {};
             
-            // Data untuk grafik
             const jurusanData = calculateJurusanAverages(userRatings);
             const criteriaData = calculateCriteriaAverages(userRatings);
             const rankingData = calculateRanking(userRatings);
@@ -1241,7 +1278,6 @@
                 }
             });
             
-            // Urutkan dari rating tertinggi ke terendah
             standRatings.sort((a, b) => b.rating - a.rating);
             
             const labels = standRatings.map(stand => stand.name);
